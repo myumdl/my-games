@@ -3,188 +3,383 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>小游戏合集</title>
+<title>小游戏合集 - 10款精品网页小游戏</title>
 <style>
-*{margin:0;padding:0;box-sizing:border-box}
-body{font-family:-apple-system,BlinkMacSystemFont,'Segoe UI','PingFang SC','Microsoft YaHei',sans-serif;background:#0f0f1a;color:#e0e0e0;min-height:100vh;overflow-x:hidden}
-canvas#particles{position:fixed;inset:0;z-index:0;pointer-events:none}
-.container{position:relative;z-index:1;max-width:1100px;margin:0 auto;padding:0 20px}
+* { margin: 0; padding: 0; box-sizing: border-box; }
+body {
+  font-family: -apple-system, 'Segoe UI', 'PingFang SC', sans-serif;
+  background: #0f0f1a;
+  color: #eee;
+  min-height: 100vh;
+  overflow-x: hidden;
+}
+
+/* Particle Canvas */
+#particles {
+  position: fixed; inset: 0; z-index: 0; pointer-events: none;
+}
 
 /* Hero */
-.hero{text-align:center;padding:60px 0 40px}
-.hero-icon{font-size:56px;margin-bottom:12px;display:block;animation:float 3s ease-in-out infinite}
-@keyframes float{0%,100%{transform:translateY(0)}50%{transform:translateY(-10px)}}
-.hero h1{font-size:42px;font-weight:800;background:linear-gradient(135deg,#6c5ce7,#00cec9,#fdcb6e);-webkit-background-clip:text;-webkit-text-fill-color:transparent;background-clip:text;margin-bottom:10px}
-.hero p{font-size:17px;color:#888;letter-spacing:1px}
-
-/* Stats */
-.stats{display:flex;justify-content:center;gap:50px;margin:30px 0 45px;flex-wrap:wrap}
-.stat{text-align:center}
-.stat .num{font-size:36px;font-weight:800;background:linear-gradient(135deg,#6c5ce7,#00cec9);-webkit-background-clip:text;-webkit-text-fill-color:transparent;background-clip:text}
-.stat .lbl{font-size:13px;color:#666;margin-top:2px}
+.hero {
+  position: relative; z-index: 1;
+  text-align: center;
+  padding: 60px 20px 40px;
+}
+.hero-emoji {
+  font-size: 3.5rem;
+  display: block;
+  margin-bottom: 12px;
+  animation: float 3s ease-in-out infinite;
+}
+@keyframes float {
+  0%,100% { transform: translateY(0); }
+  50% { transform: translateY(-10px); }
+}
+.hero h1 {
+  font-size: 2.8rem;
+  font-weight: 900;
+  background: linear-gradient(135deg, #e94560, #f97316, #f0c929);
+  -webkit-background-clip: text;
+  -webkit-text-fill-color: transparent;
+  background-clip: text;
+  margin-bottom: 10px;
+  letter-spacing: 2px;
+}
+.hero .subtitle {
+  font-size: 1.1rem;
+  color: #8892b0;
+  margin-bottom: 30px;
+}
+.stats {
+  display: flex;
+  justify-content: center;
+  gap: 40px;
+  flex-wrap: wrap;
+}
+.stat-item {
+  text-align: center;
+}
+.stat-num {
+  font-size: 2.2rem;
+  font-weight: 800;
+  color: #e94560;
+  line-height: 1;
+}
+.stat-label {
+  font-size: 0.8rem;
+  color: #5a6380;
+  margin-top: 4px;
+  text-transform: uppercase;
+  letter-spacing: 1px;
+}
 
 /* Grid */
-.grid{display:grid;grid-template-columns:repeat(3,1fr);gap:22px;padding-bottom:50px}
-@media(max-width:860px){.grid{grid-template-columns:repeat(2,1fr)}}
-@media(max-width:540px){.grid{grid-template-columns:1fr}}
+.container {
+  position: relative; z-index: 1;
+  max-width: 1100px;
+  margin: 0 auto;
+  padding: 30px 20px 40px;
+}
+.grid {
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  gap: 24px;
+}
+@media (max-width: 860px) { .grid { grid-template-columns: repeat(2, 1fr); } }
+@media (max-width: 540px) { .grid { grid-template-columns: 1fr; } }
 
 /* Card */
-.card{background:#16182a;border-radius:14px;overflow:hidden;transition:transform .3s,box-shadow .3s;opacity:0;transform:translateY(30px)}
-.card.visible{opacity:1;transform:translateY(0)}
-.card:hover{transform:translateY(-6px);box-shadow:0 12px 40px rgba(108,92,231,.25)}
-.card-top{height:5px}
-.card-body{padding:22px 22px 18px}
-.card-icon{font-size:36px;margin-bottom:8px;display:block}
-.card-title{font-size:19px;font-weight:700;color:#fff;margin-bottom:8px}
-.card-meta{display:flex;align-items:center;gap:10px;margin-bottom:10px;flex-wrap:wrap}
-.tag{font-size:11px;padding:3px 10px;border-radius:20px;font-weight:600;letter-spacing:.5px}
-.tag-puzzle{background:rgba(52,152,219,.18);color:#5dade2}
-.tag-action{background:rgba(231,76,60,.18);color:#e74c3c}
-.tag-strategy{background:rgba(243,156,18,.18);color:#f39c12}
-.stars{font-size:13px;color:#f39c12;letter-spacing:1px}
-.card-desc{font-size:13px;color:#777;line-height:1.5;margin-bottom:14px;min-height:38px}
-.card-bottom{display:flex;align-items:center;justify-content:space-between}
-.best-score{font-size:12px;color:#555}
-.best-score span{color:#f7dc6f;font-weight:600}
-.play-btn{display:inline-block;padding:8px 22px;border-radius:8px;font-size:13px;font-weight:600;color:#fff;text-decoration:none;transition:background .2s,box-shadow .2s}
-.play-btn:hover{box-shadow:0 4px 18px rgba(108,92,231,.35)}
-
-/* tag colors for btn */
-.card[data-cat="puzzle"] .play-btn{background:linear-gradient(135deg,#3498db,#6c5ce7)}
-.card[data-cat="action"] .play-btn{background:linear-gradient(135deg,#e74c3c,#e67e22)}
-.card[data-cat="strategy"] .play-btn{background:linear-gradient(135deg,#f39c12,#e67e22)}
-.card[data-cat="puzzle"] .card-top{background:linear-gradient(90deg,#3498db,#6c5ce7)}
-.card[data-cat="action"] .card-top{background:linear-gradient(90deg,#e74c3c,#e67e22)}
-.card[data-cat="strategy"] .card-top{background:linear-gradient(90deg,#f39c12,#e67e22)}
+.card {
+  background: #161625;
+  border-radius: 16px;
+  overflow: hidden;
+  cursor: pointer;
+  transition: transform 0.3s ease, box-shadow 0.3s ease;
+  opacity: 0;
+  transform: translateY(30px);
+  position: relative;
+}
+.card.visible {
+  opacity: 1;
+  transform: translateY(0);
+  transition: opacity 0.5s ease, transform 0.5s ease, box-shadow 0.3s ease;
+}
+.card:hover {
+  transform: translateY(-6px);
+  box-shadow: 0 12px 40px rgba(233, 69, 96, 0.15);
+}
+.card-bar {
+  height: 4px;
+  width: 100%;
+}
+.card-body {
+  padding: 22px 20px 18px;
+}
+.card-head {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  margin-bottom: 12px;
+}
+.card-icon {
+  font-size: 2rem;
+  width: 52px; height: 52px;
+  background: rgba(255,255,255,0.04);
+  border-radius: 14px;
+  display: flex; align-items: center; justify-content: center;
+  flex-shrink: 0;
+}
+.card-meta { flex: 1; }
+.card-title {
+  font-size: 1.15rem;
+  font-weight: 700;
+  color: #fff;
+  margin-bottom: 5px;
+}
+.card-tags {
+  display: flex;
+  gap: 8px;
+  align-items: center;
+}
+.tag {
+  font-size: 0.68rem;
+  padding: 2px 8px;
+  border-radius: 4px;
+  font-weight: 600;
+  letter-spacing: 0.5px;
+}
+.tag-puzzle { background: rgba(59,130,246,0.15); color: #60a5fa; }
+.tag-action { background: rgba(239,68,68,0.15); color: #f87171; }
+.tag-strategy { background: rgba(249,115,22,0.15); color: #fb923c; }
+.stars {
+  font-size: 0.7rem;
+  color: #f0c929;
+  letter-spacing: 1px;
+}
+.card-desc {
+  font-size: 0.85rem;
+  color: #5a6380;
+  line-height: 1.5;
+  margin-bottom: 14px;
+}
+.card-footer {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+}
+.high-score {
+  font-size: 0.75rem;
+  color: #4a5568;
+}
+.high-score span {
+  color: #f0c929;
+  font-weight: 700;
+}
+.play-btn {
+  padding: 8px 20px;
+  border: none;
+  border-radius: 8px;
+  font-size: 0.85rem;
+  font-weight: 600;
+  color: #fff;
+  cursor: pointer;
+  transition: all 0.2s;
+  letter-spacing: 0.5px;
+}
+.play-btn:hover {
+  filter: brightness(1.15);
+  box-shadow: 0 4px 15px rgba(0,0,0,0.3);
+}
 
 /* Footer */
-.footer{text-align:center;padding:30px 0 40px;font-size:13px;color:#444;border-top:1px solid #1a1a2e}
-.footer a{color:#6c5ce7;text-decoration:none}
+.footer {
+  position: relative; z-index: 1;
+  text-align: center;
+  padding: 30px 20px 24px;
+  color: #3a3f55;
+  font-size: 0.8rem;
+  border-top: 1px solid #1a1a2e;
+}
+.footer a { color: #5a6380; text-decoration: none; }
+.footer a:hover { color: #e94560; }
 </style>
 </head>
 <body>
 
 <canvas id="particles"></canvas>
 
+<div class="hero">
+  <span class="hero-emoji">🎮</span>
+  <h1>小游戏合集</h1>
+  <p class="subtitle">10款精品网页小游戏，即开即玩，零安装</p>
+  <div class="stats">
+    <div class="stat-item"><div class="stat-num">10</div><div class="stat-label">精选游戏</div></div>
+    <div class="stat-item"><div class="stat-num">3</div><div class="stat-label">游戏类型</div></div>
+    <div class="stat-item"><div class="stat-num">0</div><div class="stat-label">需要安装</div></div>
+  </div>
+</div>
+
 <div class="container">
-  <section class="hero">
-    <span class="hero-icon">🎮</span>
-    <h1>小游戏合集</h1>
-    <p>10款精品网页小游戏，即开即玩，零安装</p>
-  </section>
+  <div class="grid" id="grid"></div>
+</div>
 
-  <section class="stats">
-    <div class="stat"><div class="num">10</div><div class="lbl">精选游戏</div></div>
-    <div class="stat"><div class="num">3</div><div class="lbl">游戏类型</div></div>
-    <div class="stat"><div class="num">0</div><div class="lbl">需要安装</div></div>
-  </section>
-
-  <section class="grid" id="grid"></section>
-
-  <footer class="footer">
-    &copy; 2026 小游戏合集 &middot; Made with <a href="#">HTML5 + Canvas</a> &middot; 即开即玩
-  </footer>
+<div class="footer">
+  <p>&copy; 2026 小游戏合集 · 纯前端实现，无需服务器 · <a href="https://github.com" target="_blank">GitHub</a></p>
 </div>
 
 <script>
-// --- Game Data ---
-const games = [
-  { id:'2048',  name:'2048数字华容道', icon:'🔢', cat:'puzzle',   stars:2, url:'./01-2048/index.html',       key:'2048_best',    desc:'滑动数字方块，合并相同数字，挑战2048！' },
-  { id:'snake', name:'贪吃蛇',        icon:'🐍', cat:'action',   stars:2, url:'./02-snake/index.html',      key:'snake_best',   desc:'控制小蛇吃食物不断变长，别撞墙别咬到自己。' },
-  { id:'tetris',name:'俄罗斯方块',    icon:'🧱', cat:'puzzle',   stars:3, url:'./03-tetris/index.html',     key:null,           desc:'经典方块下落，旋转拼接，满行消除得分。' },
-  { id:'flappy',name:'像素飞鸟',      icon:'🐦', cat:'action',   stars:1, url:'./04-flappy-bird/index.html',key:'flappy_best',  desc:'点击屏幕控制小鸟飞翔，穿越绿色管道。' },
-  { id:'break', name:'打砖块',        icon:'🏓', cat:'action',   stars:2, url:'./05-breakout/index.html',   key:null,           desc:'移动挡板反弹小球，击碎所有彩色砖块过关。' },
-  { id:'match3',name:'宝石消消乐',    icon:'💎', cat:'puzzle',   stars:4, url:'./06-match3/index.html',     key:null,           desc:'交换相邻宝石，三个同色连线消除，连锁加分。' },
-  { id:'mine',  name:'扫雷',          icon:'💣', cat:'strategy', stars:3, url:'./07-minesweeper/index.html',key:null,           desc:'根据数字推理地雷位置，小心翼翼翻开每一格。' },
-  { id:'memory',name:'记忆翻牌',      icon:'🃏', cat:'puzzle',   stars:1, url:'./08-memory-cards/index.html',key:null,          desc:'翻开卡片记住图案，找出所有配对，考验记忆力。' },
-  { id:'doodle',name:'涂鸦跳跃',      icon:'⬆️', cat:'action',   stars:3, url:'./09-doodle-jump/index.html',key:'doodle_best',  desc:'控制小人左右移动，踩平台不断往上跳。' },
-  { id:'gomoku',name:'五子棋',        icon:'⚫', cat:'strategy', stars:4, url:'./10-gomoku/index.html',     key:null,           desc:'人机对战五子棋，你执黑先行，挑战AI策略。' },
+// ===== Game Data =====
+const GAMES = [
+  { id: '01-2048', name: '2048数字华容道', icon: '🔢', cat: 'puzzle', catName: '益智', stars: 2, color: '#3b82f6',
+    desc: '滑动合并数字方块，挑战达到2048！简单易上手，停不下来。', scoreKey: 'best2048' },
+  { id: '02-snake', name: '贪吃蛇', icon: '🐍', cat: 'action', catName: '动作', stars: 2, color: '#10b981',
+    desc: '经典贪吃蛇，吃食物不断变长，别撞墙也别咬到自己！', scoreKey: 'bestSnake' },
+  { id: '03-tetris', name: '俄罗斯方块', icon: '🧱', cat: 'puzzle', catName: '益智', stars: 3, color: '#a855f7',
+    desc: '七种经典方块旋转下落，消除满行得分，速度越来越快！', scoreKey: null },
+  { id: '04-flappy-bird', name: '像素飞鸟', icon: '🐦', cat: 'action', catName: '动作', stars: 1, color: '#f0c929',
+    desc: '点击屏幕控制小鸟飞行，穿越管道缝隙，看你能飞多远？', scoreKey: 'bestFlappy' },
+  { id: '05-breakout', name: '打砖块', icon: '🏓', cat: 'action', catName: '动作', stars: 2, color: '#ef4444',
+    desc: '控制挡板反弹小球，击碎所有彩色砖块，层层过关！', scoreKey: 'bestBreakout' },
+  { id: '06-match3', name: '宝石消消乐', icon: '💎', cat: 'puzzle', catName: '益智', stars: 4, color: '#e94560',
+    desc: '交换相邻宝石，三个同色连线消除，连锁消除得高分！', scoreKey: 'bestMatch3' },
+  { id: '07-minesweeper', name: '扫雷', icon: '💣', cat: 'strategy', catName: '策略', stars: 3, color: '#6366f1',
+    desc: '根据数字推理地雷位置，三个难度等你挑战，经典永不过时。', scoreKey: null },
+  { id: '08-memory-cards', name: '记忆翻牌', icon: '🃏', cat: 'puzzle', catName: '益智', stars: 1, color: '#14b8a6',
+    desc: '翻开卡片找到相同配对，考验你的记忆力，越少步数越好！', scoreKey: 'bestMemory_easy' },
+  { id: '09-doodle-jump', name: '涂鸦跳跃', icon: '⬆️', cat: 'action', catName: '动作', stars: 3, color: '#f97316',
+    desc: '控制小人不断往上跳，踩平台、躲陷阱，看你能跳多高！', scoreKey: 'bestDoodle' },
+  { id: '10-gomoku', name: '五子棋', icon: '⚫', cat: 'strategy', catName: '策略', stars: 4, color: '#8b5cf6',
+    desc: '经典五子棋人机对战，你执黑先手，AI有攻防策略，来下一盘？', scoreKey: null }
 ];
 
-const catLabel = { puzzle:'益智', action:'动作', strategy:'策略' };
+const CAT_CLASSES = { puzzle: 'tag-puzzle', action: 'tag-action', strategy: 'tag-strategy' };
+const BTN_COLORS = {
+  puzzle: 'linear-gradient(135deg, #3b82f6, #6366f1)',
+  action: 'linear-gradient(135deg, #ef4444, #e94560)',
+  strategy: 'linear-gradient(135deg, #f97316, #f59e0b)'
+};
+
+// ===== Render Cards =====
 const gridEl = document.getElementById('grid');
 
-games.forEach((g, i) => {
-  const bestVal = g.key ? localStorage.getItem(g.key) : null;
+GAMES.forEach((g, i) => {
+  const scoreVal = g.scoreKey ? localStorage.getItem(g.scoreKey) : null;
   const starsStr = '★'.repeat(g.stars) + '☆'.repeat(5 - g.stars);
+
   const card = document.createElement('div');
   card.className = 'card';
-  card.dataset.cat = g.cat;
-  card.style.transitionDelay = (i * 0.07) + 's';
+  card.style.transitionDelay = '0s';
+  card.dataset.delay = (i * 0.08).toFixed(2);
+
   card.innerHTML = `
-    <div class="card-top"></div>
+    <div class="card-bar" style="background:linear-gradient(90deg, ${g.color}, ${g.color}88)"></div>
     <div class="card-body">
-      <span class="card-icon">${g.icon}</span>
-      <div class="card-title">${g.name}</div>
-      <div class="card-meta">
-        <span class="tag tag-${g.cat}">${catLabel[g.cat]}</span>
-        <span class="stars">${starsStr}</span>
+      <div class="card-head">
+        <div class="card-icon">${g.icon}</div>
+        <div class="card-meta">
+          <div class="card-title">${g.name}</div>
+          <div class="card-tags">
+            <span class="tag ${CAT_CLASSES[g.cat]}">${g.catName}</span>
+            <span class="stars">${starsStr}</span>
+          </div>
+        </div>
       </div>
       <div class="card-desc">${g.desc}</div>
-      <div class="card-bottom">
-        <div class="best-score">${bestVal ? '最高分 <span>' + bestVal + '</span>' : ''}</div>
-        <a class="play-btn" href="${g.url}">开始游戏</a>
+      <div class="card-footer">
+        <div class="high-score">${scoreVal ? '最高分: <span>' + scoreVal + '</span>' : '暂无记录'}</div>
+        <button class="play-btn" style="background:${BTN_COLORS[g.cat]}">开始游戏</button>
       </div>
-    </div>`;
+    </div>
+  `;
+
+  card.addEventListener('click', () => { window.location.href = './' + g.id + '/index.html'; });
   gridEl.appendChild(card);
 });
 
-// --- Scroll reveal ---
+// ===== Scroll Animation =====
 const observer = new IntersectionObserver((entries) => {
-  entries.forEach(e => { if (e.isIntersecting) { e.target.classList.add('visible'); observer.unobserve(e.target); }});
+  entries.forEach(entry => {
+    if (entry.isIntersecting) {
+      const card = entry.target;
+      const delay = card.dataset.delay || '0';
+      card.style.transitionDelay = delay + 's';
+      card.classList.add('visible');
+      observer.unobserve(card);
+    }
+  });
 }, { threshold: 0.1 });
+
 document.querySelectorAll('.card').forEach(c => observer.observe(c));
 
-// --- Particle background ---
-const cv = document.getElementById('particles');
-const cx = cv.getContext('2d');
-let pw, ph, dots;
+// ===== Particle Background =====
+const canvas = document.getElementById('particles');
+const ctx = canvas.getContext('2d');
+let pW, pH, pts = [];
 
-function initParticles() {
-  pw = cv.width = window.innerWidth;
-  ph = cv.height = window.innerHeight;
-  const count = Math.floor(pw * ph / 18000);
-  dots = Array.from({length: count}, () => ({
-    x: Math.random() * pw,
-    y: Math.random() * ph,
-    vx: (Math.random() - 0.5) * 0.35,
-    vy: (Math.random() - 0.5) * 0.35,
-    r: Math.random() * 1.5 + 0.5
-  }));
+function resizeCanvas() {
+  pW = canvas.width = window.innerWidth;
+  pH = canvas.height = window.innerHeight * 3; // cover scroll
+}
+resizeCanvas();
+
+const PARTICLE_COUNT = 60;
+const CONNECT_DIST = 140;
+
+for (let i = 0; i < PARTICLE_COUNT; i++) {
+  pts.push({
+    x: Math.random() * pW,
+    y: Math.random() * pH,
+    vx: (Math.random() - 0.5) * 0.4,
+    vy: (Math.random() - 0.5) * 0.4,
+    r: 1.5 + Math.random() * 1.5
+  });
 }
 
-function animateParticles() {
-  cx.clearRect(0, 0, pw, ph);
-  for (const d of dots) {
-    d.x += d.vx; d.y += d.vy;
-    if (d.x < 0) d.x = pw; if (d.x > pw) d.x = 0;
-    if (d.y < 0) d.y = ph; if (d.y > ph) d.y = 0;
-    cx.fillStyle = 'rgba(108,92,231,0.5)';
-    cx.beginPath(); cx.arc(d.x, d.y, d.r, 0, Math.PI * 2); cx.fill();
+function drawParticles() {
+  ctx.clearRect(0, 0, pW, pH);
+
+  // Update
+  for (const p of pts) {
+    p.x += p.vx;
+    p.y += p.vy;
+    if (p.x < 0) p.x = pW;
+    if (p.x > pW) p.x = 0;
+    if (p.y < 0) p.y = pH;
+    if (p.y > pH) p.y = 0;
   }
-  // lines
-  cx.strokeStyle = 'rgba(108,92,231,0.08)';
-  cx.lineWidth = 1;
-  for (let i = 0; i < dots.length; i++) {
-    for (let j = i + 1; j < dots.length; j++) {
-      const dx = dots[i].x - dots[j].x, dy = dots[i].y - dots[j].y;
-      const dist = dx * dx + dy * dy;
-      if (dist < 14000) {
-        cx.globalAlpha = 1 - dist / 14000;
-        cx.beginPath();
-        cx.moveTo(dots[i].x, dots[i].y);
-        cx.lineTo(dots[j].x, dots[j].y);
-        cx.stroke();
+
+  // Lines
+  ctx.strokeStyle = 'rgba(233,69,96,0.06)';
+  ctx.lineWidth = 1;
+  for (let i = 0; i < pts.length; i++) {
+    for (let j = i + 1; j < pts.length; j++) {
+      const dx = pts[i].x - pts[j].x;
+      const dy = pts[i].y - pts[j].y;
+      const dist = Math.sqrt(dx * dx + dy * dy);
+      if (dist < CONNECT_DIST) {
+        ctx.globalAlpha = 1 - dist / CONNECT_DIST;
+        ctx.beginPath();
+        ctx.moveTo(pts[i].x, pts[i].y);
+        ctx.lineTo(pts[j].x, pts[j].y);
+        ctx.stroke();
       }
     }
   }
-  cx.globalAlpha = 1;
-  requestAnimationFrame(animateParticles);
+  ctx.globalAlpha = 1;
+
+  // Dots
+  ctx.fillStyle = 'rgba(233,69,96,0.25)';
+  for (const p of pts) {
+    ctx.beginPath();
+    ctx.arc(p.x, p.y, p.r, 0, Math.PI * 2);
+    ctx.fill();
+  }
+
+  requestAnimationFrame(drawParticles);
 }
 
-window.addEventListener('resize', initParticles);
-initParticles();
-animateParticles();
+drawParticles();
+window.addEventListener('resize', resizeCanvas);
 </script>
 </body>
 </html>

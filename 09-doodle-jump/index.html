@@ -3,408 +3,491 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no">
-<title>Doodle Jump</title>
+<title>涂鸦跳跃</title>
 <style>
 * { margin: 0; padding: 0; box-sizing: border-box; }
 body {
-  font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
+  font-family: -apple-system, 'Segoe UI', sans-serif;
   background: #1a1a2e;
   color: #eee;
   display: flex;
   flex-direction: column;
   align-items: center;
   min-height: 100vh;
-  padding: 15px;
+  padding: 12px 0;
   overflow: hidden;
+  touch-action: none;
 }
-h1 {
-  font-size: 36px;
-  font-weight: 800;
-  background: linear-gradient(135deg, #2ecc71, #27ae60, #f1c40f);
-  -webkit-background-clip: text;
-  -webkit-text-fill-color: transparent;
-  margin-bottom: 10px;
+h1 { font-size: 2rem; font-weight: 800; color: #e94560; margin-bottom: 10px; }
+.wrap { position: relative; }
+canvas { display: block; border-radius: 10px; }
+.hud {
+  position: absolute; top: 12px; left: 16px; right: 16px;
+  display: flex; justify-content: space-between;
+  pointer-events: none; z-index: 2;
 }
-.info {
-  display: flex;
-  gap: 15px;
-  margin-bottom: 10px;
-  align-items: center;
+.hud-score {
+  font-size: 1.6rem; font-weight: 800; color: #fff;
+  text-shadow: 0 2px 6px rgba(0,0,0,0.5);
 }
-.panel {
-  background: #16213e;
-  border-radius: 8px;
-  padding: 6px 16px;
-  text-align: center;
+.hud-best { font-size: 0.9rem; color: #f0c929; text-shadow: 0 1px 4px rgba(0,0,0,0.5); }
+.overlay {
+  position: absolute; inset: 0;
+  background: rgba(13,27,54,0.88);
+  display: none; flex-direction: column;
+  align-items: center; justify-content: center;
+  gap: 14px; border-radius: 10px; z-index: 5;
 }
-.panel .label { font-size: 10px; color: #888; text-transform: uppercase; }
-.panel .value { font-size: 20px; font-weight: 700; color: #f7dc6f; font-variant-numeric: tabular-nums; }
-canvas { border-radius: 8px; display: block; cursor: pointer; }
-.footer { margin-top: 12px; font-size: 14px; }
-.footer a { color: #f7dc6f; text-decoration: none; }
+.overlay.show { display: flex; }
+.overlay h2 { font-size: 1.8rem; color: #e94560; }
+.overlay p { font-size: 1rem; color: #bbb; }
+.btn {
+  padding: 10px 28px; border: none; border-radius: 8px;
+  font-size: 0.95rem; font-weight: 600; cursor: pointer;
+  background: #e94560; color: #fff; transition: background 0.2s;
+}
+.btn:hover { background: #c73652; }
+.footer { margin-top: 16px; font-size: 0.85rem; }
+.footer a { color: #e94560; text-decoration: none; }
 .footer a:hover { text-decoration: underline; }
 </style>
 </head>
 <body>
 
-<h1>Doodle Jump</h1>
-<div class="info">
-  <div class="panel"><div class="label">Score</div><div class="value" id="score">0</div></div>
-  <div class="panel"><div class="label">Best</div><div class="value" id="best">0</div></div>
+<h1>涂鸦跳跃</h1>
+<div class="wrap">
+  <div class="hud">
+    <span class="hud-score" id="scoreHud">0</span>
+    <span class="hud-best" id="bestHud">最高: 0</span>
+  </div>
+  <canvas id="canvas"></canvas>
+  <div class="overlay show" id="overlay">
+    <h2 id="msg">涂鸦跳跃</h2>
+    <p id="sub">左右键/触屏控制方向，踩平台往上跳</p>
+    <button class="btn" id="startBtn">开始游戏</button>
+  </div>
 </div>
-<canvas id="canvas"></canvas>
-<div class="footer"><a href="../index.html">&larr; Back</a></div>
+<div class="footer"><a href="../index.html">← 返回大厅</a></div>
 
 <script>
 const canvas = document.getElementById('canvas');
 const ctx = canvas.getContext('2d');
-const scoreEl = document.getElementById('score');
-const bestEl = document.getElementById('best');
 
-const W = Math.min(400, window.innerWidth - 30);
-const H = Math.min(600, window.innerHeight - 150);
-canvas.width = W; canvas.height = H;
-canvas.style.width = W + 'px'; canvas.style.height = H + 'px';
+let W, H, scale;
+function resize() {
+  const maxW = Math.min(window.innerWidth - 20, 400);
+  const maxH = window.innerHeight - 140;
+  W = Math.min(maxW, 400);
+  H = Math.min(maxH, 640);
+  W = Math.max(W, 260); H = Math.max(H, 400);
+  canvas.width = W; canvas.height = H;
+  scale = H / 640;
+}
+resize();
 
-let best = +localStorage.getItem('doodle_best') || 0;
-bestEl.textContent = best;
-
-// constants
-const GRAVITY = 0.4;
-const JUMP_VEL = -10.5;
-const MOVE_SPEED = 5;
-const PLAT_W = 65;
-const PLAT_H = 12;
-const PLAYER_W = 30;
-const PLAYER_H = 36;
+// === Constants ===
+const GRAVITY = 0.38;
+const JUMP_VEL = -11;
 const PLAT_COUNT = 8;
+const PLAT_W = 68;
+const PLAT_H = 14;
+const PLAYER_W = 32;
+const PLAYER_H = 36;
+const MOVE_SPEED = 5.5;
 
-let player, platforms, score, maxHeight, state, keys;
+// === State ===
+let player, platforms, particles;
+let score, maxHeight, best, state, keys;
+// state: 'idle' | 'play' | 'over'
 
 function init() {
+  score = 0; maxHeight = 0;
+  best = parseInt(localStorage.getItem('bestDoodle') || '0');
+  document.getElementById('bestHud').textContent = `最高: ${best}`;
+  document.getElementById('scoreHud').textContent = '0';
   keys = {};
-  score = 0;
-  maxHeight = 0;
-  state = 'ready'; // ready, play, dead
-  scoreEl.textContent = '0';
+  particles = [];
 
   player = {
-    x: W / 2 - PLAYER_W / 2,
-    y: H - 80,
-    vy: JUMP_VEL,
-    facing: 1 // 1=right, -1=left
+    x: W / 2 - PLAYER_W * scale / 2,
+    y: H * 0.7,
+    vy: JUMP_VEL * scale,
+    facing: 1, // 1=right, -1=left
+    width: PLAYER_W * scale,
+    height: PLAYER_H * scale
   };
 
-  // generate initial platforms
   platforms = [];
-  // guaranteed starting platform under player
-  platforms.push({ x: player.x - 15, y: H - 40, w: PLAT_W, type: 'normal' });
+  // Starting platform under player
+  platforms.push(makePlatform(player.x, player.y + player.height + 2, 'normal'));
+  // Fill screen with platforms
   for (let i = 1; i < PLAT_COUNT; i++) {
-    platforms.push(makePlatform(H - 40 - i * (H / PLAT_COUNT)));
+    const py = player.y + player.height - i * (H / PLAT_COUNT);
+    platforms.push(makePlatform(Math.random() * (W - PLAT_W * scale), py, randomType()));
   }
 }
 
-function makePlatform(y) {
-  const type = Math.random() < 0.15 && score > 500 ? 'breaking' :
-               Math.random() < 0.1 && score > 300 ? 'moving' : 'normal';
-  const p = {
-    x: Math.random() * (W - PLAT_W),
-    y: y,
-    w: PLAT_W,
-    type: type,
-    moveDir: Math.random() > 0.5 ? 1 : -1,
-    broken: false,
-    breakTimer: 0
+function makePlatform(x, y, type) {
+  return {
+    x, y,
+    w: PLAT_W * scale,
+    h: PLAT_H * scale,
+    type, // 'normal', 'moving', 'fragile', 'spring'
+    vx: type === 'moving' ? (1.5 + Math.random()) * scale * (Math.random() > 0.5 ? 1 : -1) : 0,
+    broken: false
   };
-  return p;
 }
 
-// --- Input ---
-document.addEventListener('keydown', e => {
-  keys[e.key] = true;
-  if (e.key === 'ArrowLeft' || e.key === 'ArrowRight') e.preventDefault();
-  if (state === 'ready') state = 'play';
-  if (state === 'dead' && e.key === ' ') init();
-});
-document.addEventListener('keyup', e => { keys[e.key] = false; });
+function randomType() {
+  const h = maxHeight;
+  const r = Math.random();
+  if (h > 5000 && r < 0.15) return 'fragile';
+  if (h > 2000 && r < 0.25) return 'moving';
+  if (r < 0.08) return 'spring';
+  return 'normal';
+}
 
-// touch tilt / buttons
-let touchX = null;
-canvas.addEventListener('touchstart', e => {
-  e.preventDefault();
-  touchX = e.touches[0].clientX;
-  if (state === 'ready') state = 'play';
-  if (state === 'dead') init();
-}, {passive: false});
-canvas.addEventListener('touchmove', e => {
-  e.preventDefault();
-  touchX = e.touches[0].clientX;
-}, {passive: false});
-canvas.addEventListener('touchend', () => { touchX = null; });
-canvas.addEventListener('click', () => {
-  if (state === 'ready') state = 'play';
-  if (state === 'dead') init();
-});
-
+// === Update ===
 function update() {
   if (state !== 'play') return;
 
-  // horizontal movement
-  let moveX = 0;
-  if (keys['ArrowLeft'] || keys['a']) moveX = -MOVE_SPEED;
-  if (keys['ArrowRight'] || keys['d']) moveX = MOVE_SPEED;
-  if (touchX !== null) {
-    const rect = canvas.getBoundingClientRect();
-    const mid = rect.left + rect.width / 2;
-    moveX = (touchX - mid) / rect.width * MOVE_SPEED * 4;
-    moveX = Math.max(-MOVE_SPEED, Math.min(MOVE_SPEED, moveX));
-  }
-  player.x += moveX;
-  if (moveX > 0.5) player.facing = 1;
-  if (moveX < -0.5) player.facing = -1;
+  // Player horizontal movement
+  const ms = MOVE_SPEED * scale;
+  if (keys.left) { player.x -= ms; player.facing = -1; }
+  if (keys.right) { player.x += ms; player.facing = 1; }
 
-  // wrap around
-  if (player.x + PLAYER_W < 0) player.x = W;
-  if (player.x > W) player.x = -PLAYER_W;
+  // Wrap around
+  if (player.x + player.width < 0) player.x = W;
+  if (player.x > W) player.x = -player.width;
 
-  // gravity
-  player.vy += GRAVITY;
+  // Gravity
+  player.vy += GRAVITY * scale;
   player.y += player.vy;
 
-  // platform collision (only when falling)
+  // Moving platforms
+  for (const p of platforms) {
+    if (p.type === 'moving' && !p.broken) {
+      p.x += p.vx;
+      if (p.x < 0 || p.x + p.w > W) p.vx = -p.vx;
+    }
+  }
+
+  // Collision with platforms (only when falling)
   if (player.vy > 0) {
+    const px = player.x, pw = player.width;
+    const py = player.y + player.height;
     for (const p of platforms) {
       if (p.broken) continue;
-      const px = player.x + PLAYER_W / 2;
-      const py = player.y + PLAYER_H;
-      const prevPy = py - player.vy;
-      if (px > p.x && px < p.x + p.w &&
-          py >= p.y && prevPy <= p.y + PLAT_H) {
-        if (p.type === 'breaking') {
+      if (px + pw > p.x + 4 && px < p.x + p.w - 4 &&
+          py >= p.y && py <= p.y + p.h + player.vy + 2) {
+        if (p.type === 'fragile') {
           p.broken = true;
-          p.breakTimer = 10;
-        } else {
-          player.vy = JUMP_VEL;
-          player.y = p.y - PLAYER_H;
+          spawnBreakParticles(p);
+          continue;
         }
+        player.y = p.y - player.height;
+        const jumpV = p.type === 'spring' ? JUMP_VEL * 1.6 * scale : JUMP_VEL * scale;
+        player.vy = jumpV;
+        if (p.type === 'spring') spawnSpringParticles(p);
       }
     }
   }
 
-  // move moving platforms
-  for (const p of platforms) {
-    if (p.type === 'moving' && !p.broken) {
-      p.x += p.moveDir * 1.5;
-      if (p.x <= 0 || p.x + p.w >= W) p.moveDir *= -1;
-    }
-    if (p.broken && p.breakTimer > 0) p.breakTimer--;
-  }
-
-  // scroll camera when player is above mid
+  // Scroll camera when player goes above mid screen
   const scrollLine = H * 0.38;
   if (player.y < scrollLine) {
     const shift = scrollLine - player.y;
     player.y = scrollLine;
-    maxHeight += shift;
-    score = Math.floor(maxHeight / 10);
-    scoreEl.textContent = score;
+    maxHeight += shift / scale;
+    score = Math.floor(maxHeight);
+    document.getElementById('scoreHud').textContent = score;
 
     for (const p of platforms) p.y += shift;
+    for (const pt of particles) pt.y += shift;
 
-    // remove offscreen, add new
+    // Remove off-screen platforms and add new ones
     for (let i = platforms.length - 1; i >= 0; i--) {
-      if (platforms[i].y > H + 20) platforms.splice(i, 1);
+      if (platforms[i].y > H + 50) platforms.splice(i, 1);
     }
     while (platforms.length < PLAT_COUNT) {
       const topY = Math.min(...platforms.map(p => p.y));
       const gap = H / PLAT_COUNT;
-      // ensure reachable: max gap ~140px
-      const newY = topY - (gap * 0.7 + Math.random() * gap * 0.6);
-      platforms.push(makePlatform(newY));
+      const ny = topY - gap - Math.random() * gap * 0.4;
+      platforms.push(makePlatform(Math.random() * (W - PLAT_W * scale), ny, randomType()));
     }
   }
 
-  // dead: fell below screen
+  // Fall off screen
   if (player.y > H + 50) {
-    state = 'dead';
-    if (score > best) {
-      best = score;
-      bestEl.textContent = best;
-      localStorage.setItem('doodle_best', best);
-    }
+    gameOver();
+  }
+
+  // Particles
+  for (let i = particles.length - 1; i >= 0; i--) {
+    const p = particles[i];
+    p.x += p.vx; p.y += p.vy; p.vy += 0.15;
+    p.life -= 0.03;
+    if (p.life <= 0) particles.splice(i, 1);
   }
 }
 
-// --- Drawing ---
+function gameOver() {
+  state = 'over';
+  if (score > best) {
+    best = score;
+    localStorage.setItem('bestDoodle', best);
+  }
+  document.getElementById('bestHud').textContent = `最高: ${best}`;
+  document.getElementById('msg').textContent = '游戏结束';
+  document.getElementById('sub').textContent = `得分: ${score}　最高: ${best}`;
+  document.getElementById('startBtn').textContent = '再来一局';
+  document.getElementById('overlay').classList.add('show');
+}
+
+function spawnBreakParticles(p) {
+  for (let i = 0; i < 6; i++) {
+    particles.push({
+      x: p.x + Math.random() * p.w, y: p.y,
+      vx: (Math.random() - 0.5) * 3, vy: Math.random() * 2,
+      color: '#8b5e34', life: 1
+    });
+  }
+}
+
+function spawnSpringParticles(p) {
+  for (let i = 0; i < 5; i++) {
+    particles.push({
+      x: p.x + p.w / 2, y: p.y,
+      vx: (Math.random() - 0.5) * 4, vy: -2 - Math.random() * 3,
+      color: '#f0c929', life: 1
+    });
+  }
+}
+
+// === Draw ===
 function drawBg() {
-  const grad = ctx.createLinearGradient(0, 0, 0, H);
-  grad.addColorStop(0, '#0a0a1a');
-  grad.addColorStop(1, '#16213e');
-  ctx.fillStyle = grad;
+  const g = ctx.createLinearGradient(0, 0, 0, H);
+  g.addColorStop(0, '#0a1628');
+  g.addColorStop(1, '#16213e');
+  ctx.fillStyle = g;
   ctx.fillRect(0, 0, W, H);
 
-  // grid lines
-  ctx.strokeStyle = 'rgba(255,255,255,0.03)';
+  // Faint grid lines
+  ctx.strokeStyle = 'rgba(42,74,127,0.12)';
   ctx.lineWidth = 1;
-  const gridOff = (maxHeight * 0.5) % 40;
-  for (let y = gridOff; y < H; y += 40) {
+  const gs = 40 * scale;
+  for (let x = 0; x < W; x += gs) {
+    ctx.beginPath(); ctx.moveTo(x, 0); ctx.lineTo(x, H); ctx.stroke();
+  }
+  for (let y = 0; y < H; y += gs) {
     ctx.beginPath(); ctx.moveTo(0, y); ctx.lineTo(W, y); ctx.stroke();
   }
 }
 
 function drawPlatform(p) {
-  if (p.broken && p.breakTimer <= 0) return;
-
-  ctx.save();
-  if (p.broken) ctx.globalAlpha = p.breakTimer / 10;
+  if (p.broken) return;
+  const r = p.h / 2;
 
   if (p.type === 'normal') {
-    ctx.fillStyle = '#27ae60';
-    ctx.beginPath();
-    ctx.roundRect(p.x, p.y, p.w, PLAT_H, 4);
-    ctx.fill();
-    // highlight
-    ctx.fillStyle = '#2ecc71';
-    ctx.fillRect(p.x + 3, p.y + 2, p.w - 6, 3);
+    const g = ctx.createLinearGradient(p.x, p.y, p.x, p.y + p.h);
+    g.addColorStop(0, '#2ecc71');
+    g.addColorStop(1, '#1b8a2e');
+    ctx.fillStyle = g;
   } else if (p.type === 'moving') {
-    ctx.fillStyle = '#3498db';
-    ctx.beginPath();
-    ctx.roundRect(p.x, p.y, p.w, PLAT_H, 4);
-    ctx.fill();
-    ctx.fillStyle = '#5dade2';
-    ctx.fillRect(p.x + 3, p.y + 2, p.w - 6, 3);
-    // arrows
-    ctx.fillStyle = 'rgba(255,255,255,0.3)';
-    ctx.font = '10px sans-serif';
-    ctx.textAlign = 'center';
-    ctx.fillText(p.moveDir > 0 ? '>>>' : '<<<', p.x + p.w / 2, p.y + 10);
-  } else if (p.type === 'breaking') {
-    ctx.fillStyle = '#e67e22';
-    ctx.beginPath();
-    ctx.roundRect(p.x, p.y, p.w, PLAT_H, 4);
-    ctx.fill();
-    // cracks
-    ctx.strokeStyle = '#c0392b';
-    ctx.lineWidth = 1;
-    ctx.beginPath();
-    ctx.moveTo(p.x + 15, p.y + 2);
-    ctx.lineTo(p.x + 20, p.y + PLAT_H - 2);
-    ctx.moveTo(p.x + p.w - 18, p.y + 3);
-    ctx.lineTo(p.x + p.w - 22, p.y + PLAT_H - 1);
-    ctx.stroke();
+    const g = ctx.createLinearGradient(p.x, p.y, p.x, p.y + p.h);
+    g.addColorStop(0, '#3b82f6');
+    g.addColorStop(1, '#1d4ed8');
+    ctx.fillStyle = g;
+  } else if (p.type === 'fragile') {
+    ctx.fillStyle = '#8b6914';
+    ctx.setLineDash([4, 3]);
+    ctx.strokeStyle = '#6b4f10';
+    ctx.lineWidth = 1.5;
+  } else if (p.type === 'spring') {
+    const g = ctx.createLinearGradient(p.x, p.y, p.x, p.y + p.h);
+    g.addColorStop(0, '#2ecc71');
+    g.addColorStop(1, '#1b8a2e');
+    ctx.fillStyle = g;
   }
-  ctx.restore();
+
+  // Draw rounded rect
+  ctx.beginPath();
+  ctx.moveTo(p.x + r, p.y);
+  ctx.lineTo(p.x + p.w - r, p.y);
+  ctx.quadraticCurveTo(p.x + p.w, p.y, p.x + p.w, p.y + r);
+  ctx.lineTo(p.x + p.w, p.y + p.h - r);
+  ctx.quadraticCurveTo(p.x + p.w, p.y + p.h, p.x + p.w - r, p.y + p.h);
+  ctx.lineTo(p.x + r, p.y + p.h);
+  ctx.quadraticCurveTo(p.x, p.y + p.h, p.x, p.y + p.h - r);
+  ctx.lineTo(p.x, p.y + r);
+  ctx.quadraticCurveTo(p.x, p.y, p.x + r, p.y);
+  ctx.closePath();
+  ctx.fill();
+  if (p.type === 'fragile') { ctx.stroke(); ctx.setLineDash([]); }
+
+  // Top highlight
+  ctx.fillStyle = 'rgba(255,255,255,0.15)';
+  ctx.fillRect(p.x + 4, p.y + 2, p.w - 8, 3);
+
+  // Spring coil
+  if (p.type === 'spring') {
+    const sx = p.x + p.w / 2, sy = p.y;
+    const coilH = 12 * scale;
+    ctx.strokeStyle = '#e94560';
+    ctx.lineWidth = 2.5;
+    ctx.beginPath();
+    for (let i = 0; i <= 3; i++) {
+      const t = i / 3;
+      const cx = sx + (i % 2 === 0 ? -6 : 6) * scale;
+      ctx.lineTo(cx, sy - t * coilH);
+    }
+    ctx.stroke();
+    // Spring top
+    ctx.fillStyle = '#e94560';
+    ctx.beginPath();
+    ctx.arc(sx, sy - coilH, 4 * scale, 0, Math.PI * 2);
+    ctx.fill();
+  }
 }
 
 function drawPlayer() {
-  const x = player.x, y = player.y;
-  const cx = x + PLAYER_W / 2;
-  const f = player.facing;
+  const p = player;
+  const cx = p.x + p.width / 2;
+  const cy = p.y + p.height / 2;
 
   ctx.save();
+  ctx.translate(cx, cy);
+  if (p.facing === -1) ctx.scale(-1, 1);
 
-  // body
-  ctx.fillStyle = '#f1c40f';
+  const w2 = p.width / 2, h2 = p.height / 2;
+
+  // Body
+  ctx.fillStyle = '#f0c929';
   ctx.beginPath();
-  ctx.ellipse(cx, y + 16, 13, 14, 0, 0, Math.PI * 2);
+  ctx.ellipse(0, h2 * 0.1, w2 * 0.7, h2 * 0.8, 0, 0, Math.PI * 2);
   ctx.fill();
 
-  // belly
-  ctx.fillStyle = '#f9e784';
+  // Belly
+  ctx.fillStyle = '#f5deb3';
   ctx.beginPath();
-  ctx.ellipse(cx, y + 18, 8, 9, 0, 0, Math.PI * 2);
+  ctx.ellipse(0, h2 * 0.25, w2 * 0.45, h2 * 0.45, 0, 0, Math.PI * 2);
   ctx.fill();
 
-  // eyes
-  const eyeOff = f * 4;
+  // Eyes
   ctx.fillStyle = '#fff';
   ctx.beginPath();
-  ctx.ellipse(cx - 4 + eyeOff, y + 10, 5, 5.5, 0, 0, Math.PI * 2);
+  ctx.ellipse(w2 * 0.25, -h2 * 0.2, w2 * 0.2, h2 * 0.2, 0, 0, Math.PI * 2);
   ctx.fill();
+  ctx.fillStyle = '#111';
   ctx.beginPath();
-  ctx.ellipse(cx + 5 + eyeOff, y + 10, 5, 5.5, 0, 0, Math.PI * 2);
-  ctx.fill();
-  // pupils
-  ctx.fillStyle = '#222';
-  ctx.beginPath();
-  ctx.arc(cx - 3 + eyeOff + f * 2, y + 10, 2.5, 0, Math.PI * 2);
-  ctx.fill();
-  ctx.beginPath();
-  ctx.arc(cx + 6 + eyeOff + f * 2, y + 10, 2.5, 0, Math.PI * 2);
+  ctx.arc(w2 * 0.32, -h2 * 0.18, w2 * 0.09, 0, Math.PI * 2);
   ctx.fill();
 
-  // mouth
-  ctx.strokeStyle = '#c0392b';
-  ctx.lineWidth = 1.5;
+  // Nose/beak
+  ctx.fillStyle = '#e94560';
   ctx.beginPath();
-  ctx.arc(cx + f * 3, y + 18, 4, 0.1, Math.PI - 0.1);
-  ctx.stroke();
+  ctx.moveTo(w2 * 0.55, -h2 * 0.05);
+  ctx.lineTo(w2 * 0.9, h2 * 0.05);
+  ctx.lineTo(w2 * 0.55, h2 * 0.15);
+  ctx.closePath();
+  ctx.fill();
 
-  // legs (spring effect when jumping up)
-  const legStretch = player.vy < 0 ? 4 : 0;
-  ctx.fillStyle = '#f1c40f';
-  ctx.fillRect(cx - 10, y + 28 + legStretch, 7, 8 - legStretch);
-  ctx.fillRect(cx + 3, y + 28 + legStretch, 7, 8 - legStretch);
-
-  // feet
-  ctx.fillStyle = '#e67e22';
-  ctx.fillRect(cx - 12, y + PLAYER_H - 2 + legStretch, 10, 4);
-  ctx.fillRect(cx + 2, y + PLAYER_H - 2 + legStretch, 10, 4);
+  // Feet
+  const legOff = player.vy > 0 ? 4 * scale : -2 * scale;
+  ctx.fillStyle = '#c78c1e';
+  ctx.beginPath();
+  ctx.ellipse(-w2 * 0.3, h2 * 0.85 + legOff, w2 * 0.22, h2 * 0.15, 0, 0, Math.PI * 2);
+  ctx.fill();
+  ctx.beginPath();
+  ctx.ellipse(w2 * 0.25, h2 * 0.85 + legOff, w2 * 0.22, h2 * 0.15, 0, 0, Math.PI * 2);
+  ctx.fill();
 
   ctx.restore();
 }
 
-function drawOverlay() {
-  if (state === 'ready') {
-    ctx.fillStyle = 'rgba(0,0,0,0.35)';
-    ctx.fillRect(0, 0, W, H);
-    ctx.fillStyle = '#f7dc6f';
-    ctx.font = 'bold 22px sans-serif';
-    ctx.textAlign = 'center';
-    ctx.fillText('Click or Press Any Key', W / 2, H / 2 + 40);
-    ctx.fillStyle = '#aaa';
-    ctx.font = '14px sans-serif';
-    ctx.fillText('Arrow keys / Touch to move', W / 2, H / 2 + 65);
+function drawParticles() {
+  for (const p of particles) {
+    ctx.globalAlpha = p.life;
+    ctx.fillStyle = p.color;
+    ctx.beginPath();
+    ctx.arc(p.x, p.y, 3 * scale, 0, Math.PI * 2);
+    ctx.fill();
   }
-
-  if (state === 'dead') {
-    ctx.fillStyle = 'rgba(0,0,0,0.55)';
-    ctx.fillRect(0, 0, W, H);
-    ctx.fillStyle = '#e74c3c';
-    ctx.font = 'bold 36px sans-serif';
-    ctx.textAlign = 'center';
-    ctx.fillText('Game Over', W / 2, H / 2 - 15);
-    ctx.fillStyle = '#f7dc6f';
-    ctx.font = 'bold 22px sans-serif';
-    ctx.fillText('Score: ' + score, W / 2, H / 2 + 20);
-    ctx.fillStyle = '#aaa';
-    ctx.font = '14px sans-serif';
-    ctx.fillText('Click to restart', W / 2, H / 2 + 50);
-  }
+  ctx.globalAlpha = 1;
 }
 
-function render() {
+function draw() {
   drawBg();
   for (const p of platforms) drawPlatform(p);
-  drawPlayer();
-
-  // score on canvas
-  ctx.fillStyle = 'rgba(255,255,255,0.7)';
-  ctx.font = 'bold 18px sans-serif';
-  ctx.textAlign = 'left';
-  ctx.fillText(score + 'm', 12, 28);
-
-  drawOverlay();
+  if (state === 'play') drawPlayer();
+  drawParticles();
 }
 
+// === Loop ===
 function loop() {
   update();
-  render();
+  draw();
   requestAnimationFrame(loop);
 }
 
+// === Input ===
+document.addEventListener('keydown', e => {
+  if (e.key === 'ArrowLeft' || e.key === 'a') keys.left = true;
+  if (e.key === 'ArrowRight' || e.key === 'd') keys.right = true;
+});
+document.addEventListener('keyup', e => {
+  if (e.key === 'ArrowLeft' || e.key === 'a') keys.left = false;
+  if (e.key === 'ArrowRight' || e.key === 'd') keys.right = false;
+});
+
+// Touch - tilt style: touch left half = go left, right half = go right
+let touchActive = false;
+canvas.addEventListener('touchstart', e => {
+  e.preventDefault();
+  touchActive = true;
+  handleTouch(e.touches[0]);
+}, { passive: false });
+canvas.addEventListener('touchmove', e => {
+  e.preventDefault();
+  if (touchActive) handleTouch(e.touches[0]);
+}, { passive: false });
+canvas.addEventListener('touchend', e => {
+  e.preventDefault();
+  touchActive = false;
+  keys.left = false; keys.right = false;
+}, { passive: false });
+
+function handleTouch(touch) {
+  const rect = canvas.getBoundingClientRect();
+  const x = touch.clientX - rect.left;
+  const mid = rect.width / 2;
+  keys.left = x < mid;
+  keys.right = x >= mid;
+}
+
+// Also support device tilt
+if (window.DeviceOrientationEvent) {
+  window.addEventListener('deviceorientation', e => {
+    if (state !== 'play') return;
+    const gamma = e.gamma; // -90..90
+    if (gamma === null) return;
+    keys.left = gamma < -8;
+    keys.right = gamma > 8;
+  });
+}
+
+// Start button
+document.getElementById('startBtn').addEventListener('click', () => {
+  init();
+  state = 'play';
+  document.getElementById('overlay').classList.remove('show');
+});
+
+window.addEventListener('resize', resize);
+
 init();
-loop();
+state = 'idle';
+requestAnimationFrame(loop);
 </script>
 </body>
 </html>
